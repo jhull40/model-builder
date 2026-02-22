@@ -1,2 +1,4 @@
-name: 'test'
-seed: 524
+base:
+  name: 'test'
+  output_dir: 'output'
+  seed: 524
