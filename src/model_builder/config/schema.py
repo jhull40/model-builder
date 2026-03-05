@@ -1,4 +1,5 @@
 import os
+from typing import Optional
 from pydantic import BaseModel, model_validator
 
 
@@ -8,8 +9,13 @@ class BaseConfig(BaseModel):
     output_dir: str = "output"
 
 
+class DataConfig(BaseModel):
+    target_column: Optional[str] = None
+
+
 class PipelineConfig(BaseModel):
     base: BaseConfig
+    data: DataConfig = DataConfig()
 
     @model_validator(mode="after")
     def _setup(self) -> "PipelineConfig":

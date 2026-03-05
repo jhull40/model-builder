@@ -2,3 +2,6 @@ base:
   name: 'test'
   output_dir: 'output'
   seed: 524
+
+data:
+  target_column: 'target'
