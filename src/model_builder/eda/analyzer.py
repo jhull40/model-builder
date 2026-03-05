@@ -306,7 +306,7 @@ class DataAnalyzer:
 
                 ax.boxplot(
                     clean,
-                    vert=True,
+                    orientation="vertical",
                     patch_artist=True,
                     boxprops=dict(facecolor="steelblue", alpha=0.6),
                     medianprops=dict(color="black", linewidth=1.5),

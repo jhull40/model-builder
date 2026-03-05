@@ -1,7 +1,23 @@
 base:
-  name: 'test'
-  output_dir: 'output'
+  name: test
+  output_dir: output
   seed: 524
 
 data:
-  target_column: 'target'
+  target_column: target
+  date_column: none
+  impute_strategy: median
+
+split:
+  train_size: 0.8
+  test_size: 0.2
+  val_size: 0.0
+  shuffle: true
+  stratified_split: true
+  split_column: none
+  start_train_date: none
+  stop_train_date: none
+  start_test_date: none
+  stop_test_date: none
+  start_val_date: none
+  stop_val_date: none

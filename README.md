@@ -10,6 +10,7 @@ A Python framework for building, evaluating, and analysing machine-learning pipe
 2. [Setup](#setup)
 3. [Configuration](#configuration)
 4. [EDA Analyzer](#eda-analyzer)
+5. [Preprocessor](#preprocessor)
 
 ---
 
@@ -201,3 +202,85 @@ The PDF (`eda.pdf`) consolidates all of the above into a single document:
 - **Histograms** — one plot per numeric column, labelled with its distribution type. Priority order: target column → non-normal columns → remaining columns.
 - **Outlier Summary** — table with outlier counts and IQR fences; rows with outliers highlighted in red.
 - **Outlier Boxplots** — grid of boxplots (6 per page) with outlier points overlaid in red.
+
+---
+
+## Preprocessor
+
+`Preprocessor` handles train/test/validation splitting, missing-value imputation, and feature scaling. It must be fitted on training data before being applied to test or validation sets.
+
+### Usage
+
+```python
+import pandas as pd
+from model_builder import Preprocessor
+from model_builder.utils.utils import load_config
+
+config = load_config("configs/config.yaml")
+preprocessor = Preprocessor(config)
+
+# Split first, then fit only on training data
+train_df, test_df, val_df = preprocessor.split(df)
+
+train_df = preprocessor.fit_transform(train_df)
+test_df  = preprocessor.transform(test_df)
+if val_df is not None:
+    val_df = preprocessor.transform(val_df)
+```
+
+### Splitting
+
+`split(df)` returns `(train_df, test_df, val_df)`. `val_df` is `None` when `split.val_size == 0`. The strategy is chosen automatically based on the config:
+
+| Priority | Strategy | Triggered when |
+|---|---|---|
+| 1 | **Date-based** | Any of `start_train_date`, `stop_train_date`, `start_test_date`, `stop_test_date` is set |
+| 2 | **Column-based** | `split_column` is set — partitions on unique values so entire groups stay together (prevents leakage for player/subject IDs) |
+| 3 | **Random** | Default — `sklearn.model_selection.train_test_split` with optional stratification |
+
+### Imputation
+
+Controlled by `data.impute_strategy`:
+
+| Value | Behaviour |
+|---|---|
+| `"median"` *(default)* | Fill `NaN` values with the per-column median computed on the training set |
+| `"mean"` | Fill `NaN` values with the per-column mean computed on the training set |
+| `"drop"` | Drop any row that contains a `NaN` value |
+
+### Scaling
+
+Scalers are fitted on the training set and re-used for `transform()`. The scaler chosen for each column depends on the distribution label produced by the EDA analyzer:
+
+| Distribution | Scaler |
+|---|---|
+| `gaussian`, `right-skewed`, `left-skewed` | `StandardScaler` (zero mean, unit variance) |
+| `binary` | *(not scaled)* |
+| All others (`uniform`, `ordinal/categorical`, `non-gaussian`) | `MinMaxScaler` (range [0, 1]) |
+
+### Configuration reference
+
+#### `data` fields used by the preprocessor
+
+| Field | Type | Default | Description |
+|---|---|---|---|
+| `target_column` | `str \| null` | `null` | Label column — excluded from scaling and imputation |
+| `date_column` | `str \| null` | `null` | Date column used for date-based splitting |
+| `impute_strategy` | `"mean" \| "median" \| "drop"` | `"median"` | Missing-value strategy |
+
+#### `split` fields
+
+| Field | Type | Default | Description |
+|---|---|---|---|
+| `train_size` | `float` | `0.8` | Fraction of data (or groups) used for training |
+| `test_size` | `float` | `0.2` | Fraction used for testing |
+| `val_size` | `float` | `0.0` | Fraction used for validation; `0` disables the validation set |
+| `shuffle` | `bool` | `true` | Whether to shuffle before splitting (random split only) |
+| `stratified_split` | `bool` | `true` | Stratify on `target_column` when using random split |
+| `split_column` | `str \| null` | `null` | Column whose unique values are used as split groups |
+| `start_train_date` | `str \| null` | `null` | Inclusive lower bound for training rows (date split) |
+| `stop_train_date` | `str \| null` | `null` | Inclusive upper bound for training rows (date split) |
+| `start_test_date` | `str \| null` | `null` | Inclusive lower bound for test rows (date split) |
+| `stop_test_date` | `str \| null` | `null` | Inclusive upper bound for test rows (date split) |
+| `start_val_date` | `str \| null` | `null` | Inclusive lower bound for validation rows (date split) |
+| `stop_val_date` | `str \| null` | `null` | Inclusive upper bound for validation rows (date split) |
