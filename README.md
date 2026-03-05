@@ -11,6 +11,7 @@ A Python framework for building, evaluating, and analysing machine-learning pipe
 3. [Configuration](#configuration)
 4. [EDA Analyzer](#eda-analyzer)
 5. [Preprocessor](#preprocessor)
+6. [Pipeline](#pipeline)
 
 ---
 
@@ -284,3 +285,57 @@ Scalers are fitted on the training set and re-used for `transform()`. The scaler
 | `stop_test_date` | `str \| null` | `null` | Inclusive upper bound for test rows (date split) |
 | `start_val_date` | `str \| null` | `null` | Inclusive lower bound for validation rows (date split) |
 | `stop_val_date` | `str \| null` | `null` | Inclusive upper bound for validation rows (date split) |
+
+---
+
+## Pipeline
+
+`Pipeline` orchestrates the full preprocessing workflow for a single run. Each call to `run()` generates a timestamp and a unique auto-incrementing `model_id`, records the run in a persistent `models.csv` registry, and saves the fitted scaler to its own directory.
+
+### Usage
+
+```python
+import pandas as pd
+from model_builder.pipeline import Pipeline
+from model_builder.utils.utils import load_config
+
+config = load_config("configs/config.yaml")
+pipeline = Pipeline(config)
+pipeline.run(df)
+
+print(pipeline.model_id)   # e.g. 3
+print(pipeline.timestamp)  # e.g. "2026-03-04 14:22:01"
+```
+
+### Output layout
+
+Every run writes to `output/<name>/models/`:
+
+```
+output/<name>/models/
+├── models.csv          ← append-only run registry
+└── <model_id>/
+    └── scaler_<model_id>   ← joblib-serialised scaler dict
+```
+
+### `models.csv`
+
+| Column | Description |
+|---|---|
+| `model_id` | Auto-incrementing integer — unique per run |
+| `name` | Value of `base.name` from the config |
+| `timestamp` | Wall-clock time the run started (`YYYY-MM-DD HH:MM:SS`) |
+
+Each call to `run()` appends one row. The header is written only once (on first creation).
+
+### Scaler file
+
+The scaler is saved with `joblib` and can be reloaded for inference:
+
+```python
+import joblib
+
+scalers = joblib.load("output/my_run/models/3/scaler_3")
+# scalers is a dict mapping column name → fitted sklearn scaler
+scaled = scalers["feature_a"].transform(X[["feature_a"]])
+```
