@@ -12,6 +12,7 @@ A Python framework for building, evaluating, and analysing machine-learning pipe
 4. [EDA Analyzer](#eda-analyzer)
 5. [Preprocessor](#preprocessor)
 6. [Pipeline](#pipeline)
+7. [Model Training](#model-training)
 
 ---
 
@@ -339,3 +340,30 @@ scalers = joblib.load("output/my_run/models/3/scaler_3")
 # scalers is a dict mapping column name → fitted sklearn scaler
 scaled = scalers["feature_a"].transform(X[["feature_a"]])
 ```
+
+---
+
+## Model Training
+
+Model training is configured via the `model` block in the YAML config and executed as part of the `Pipeline.run()` call. The model type is selected with `model.type`; each type has its own sub-block for hyperparameters.
+
+```yaml
+model:
+  type: logr   # currently supported: logr
+  logr:
+    Cs: 10
+    cv: 5
+    solver: lbfgs
+    max_iter: 200
+```
+
+After training, the fitted model is saved alongside the scaler in `output/<name>/models/<model_id>/`:
+
+```
+output/<name>/models/
+└── <model_id>/
+    ├── scaler_<model_id>   ← fitted scaler(s)
+    └── model_<model_id>    ← serialised model
+```
+
+See [`src/model_builder/training/README.md`](src/model_builder/training/README.md) for a full description of each model backend and its parameters.

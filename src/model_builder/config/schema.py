@@ -1,5 +1,5 @@
 import os
-from typing import Literal, Optional
+from typing import List, Literal, Optional, Union
 from pydantic import BaseModel, field_validator, model_validator
 
 
@@ -14,6 +14,22 @@ class BaseConfig(BaseModel):
     name: str
     seed: int = 524
     output_dir: str = "output"
+
+
+class LogisticRegressionConfig(BaseModel):
+    Cs: Union[int, List[float]] = 10
+    cv: int = 5
+    solver: Literal[
+        "lbfgs", "liblinear", "newton-cg", "newton-cholesky", "sag", "saga"
+    ] = "lbfgs"
+    max_iter: int = 100
+    l1_ratios: List[float] = [0.0]
+    n_jobs: int = -1
+
+
+class ModelConfig(BaseModel):
+    type: Literal["logr"] = "logr"
+    logr: LogisticRegressionConfig = LogisticRegressionConfig()
 
 
 class DataConfig(BaseModel):
@@ -58,6 +74,7 @@ class TrainTestSplitConfig(BaseModel):
 
 class PipelineConfig(BaseModel):
     base: BaseConfig
+    model: ModelConfig = ModelConfig()
     data: DataConfig = DataConfig()
     split: TrainTestSplitConfig = TrainTestSplitConfig()
 

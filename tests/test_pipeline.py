@@ -113,7 +113,13 @@ class TestModelsCsv:
         cfg = _make_config(tmp_path)
         Pipeline(cfg).run(_iris_df())
         rows = self._csv_rows(tmp_path)
-        assert set(rows[0].keys()) == {"model_id", "name", "timestamp"}
+        assert set(rows[0].keys()) == {
+            "model_id",
+            "name",
+            "model_type",
+            "test_score",
+            "timestamp",
+        }
 
     def test_csv_name_matches_config(self, tmp_path):
         cfg = _make_config(tmp_path, name="experiment1")
