@@ -4,14 +4,19 @@ base:
   seed: 524
 
 model:
-  type: logr
+  type: xgbc
   logr:
     Cs: 10
     cv: 5
     solver: lbfgs
     max_iter: 200
     l1_ratios: [0.0]
-    n_jobs: -1
+  xgbc:
+    n_estimators: 100
+    max_depth: 6
+    learning_rate: 0.3
+    subsample: 1.0
+    colsample_bytree: 1.0
 
 data:
   target_column: target

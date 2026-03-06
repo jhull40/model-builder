@@ -10,6 +10,7 @@ This package implements the training layer of `model-builder`. All models share 
 2. [Model selection](#model-selection)
 3. [Models](#models)
    - [Logistic Regression (`logr`)](#logistic-regression-logr)
+   - [XGBoost Classifier (`xgbc`)](#xgboost-classifier-xgbc)
 4. [Adding a new model](#adding-a-new-model)
 
 ---
@@ -37,7 +38,7 @@ The active model is specified in the YAML config under `model.type`:
 ```yaml
 model:
   type: logr   # identifier string for the desired backend
-  logr:        # sub-block name matches the type string
+  logr:        # sub-block name matches the type string (logr, xgbc)
     ...
 ```
 
@@ -65,7 +66,6 @@ model:
     solver: lbfgs
     max_iter: 200
     l1_ratios: [0.0]
-    n_jobs: -1
 ```
 
 #### Parameter reference
@@ -77,7 +77,6 @@ model:
 | `solver` | `str` | `"lbfgs"` | Optimisation algorithm. Choices: `lbfgs`, `liblinear`, `newton-cg`, `newton-cholesky`, `sag`, `saga`. See the solver/penalty compatibility table below. |
 | `max_iter` | `int` | `100` | Maximum number of iterations for the solver to converge. Increase if you see convergence warnings. |
 | `l1_ratios` | `list[float]` | `[0.0]` | Elastic-net mixing parameter(s), relevant only when `solver="saga"` and penalty is `"elasticnet"`. `0.0` is pure L2; `1.0` is pure L1. Ignored for other solvers. |
-| `n_jobs` | `int` | `-1` | Number of parallel jobs used for the cross-validation loop. `-1` uses all available CPU cores. |
 
 #### Solver / penalty compatibility
 
@@ -102,6 +101,47 @@ from model_builder.training.models.logr import LogisticRegressionModel
 model = LogisticRegressionModel.load("output/my_run/models/3/model_3")
 print(model._clf.C_)          # best C chosen per class
 print(model._clf.scores_)     # CV scores for every C candidate
+```
+
+---
+
+### XGBoost Classifier (`xgbc`)
+
+**File:** [`models/xgbc.py`](models/xgbc.py)
+**Backed by:** [`xgboost.XGBClassifier`](https://xgboost.readthedocs.io/en/stable/python/python_api.html#xgboost.XGBClassifier)
+
+`XGBClassifierModel` wraps XGBoost's gradient-boosted tree classifier. It supports binary and multi-class classification out of the box.
+
+#### Config block
+
+```yaml
+model:
+  type: xgbc
+  xgbc:
+    n_estimators: 100
+    max_depth: 6
+    learning_rate: 0.3
+    subsample: 1.0
+    colsample_bytree: 1.0
+```
+
+#### Parameter reference
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `n_estimators` | `int` | `100` | Number of boosting rounds (trees). More rounds can improve accuracy but increase training time and risk overfitting. |
+| `max_depth` | `int` | `6` | Maximum depth of each tree. Deeper trees capture more complex patterns but are more prone to overfitting. |
+| `learning_rate` | `float` | `0.3` | Step-size shrinkage applied after each boosting round. Lower values require more rounds but generalise better. |
+| `subsample` | `float` | `1.0` | Fraction of training samples drawn (without replacement) for each tree. Values less than `1.0` add stochasticity and reduce overfitting. |
+| `colsample_bytree` | `float` | `1.0` | Fraction of features randomly sampled for each tree. Reducing this introduces feature-level randomness similar to Random Forests. |
+
+#### Accessing the underlying estimator
+
+```python
+from model_builder.training.models.xgbc import XGBClassifierModel
+
+model = XGBClassifierModel.load("output/my_run/models/3/model_3")
+print(model._clf.feature_importances_)   # gain-based importance scores
 ```
 
 ---

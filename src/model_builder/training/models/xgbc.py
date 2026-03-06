@@ -1,38 +1,35 @@
 from pathlib import Path
-from typing import List, Literal, Union
 
 import joblib
 import numpy as np
 import pandas as pd
-from sklearn.linear_model import LogisticRegressionCV
+from xgboost import XGBClassifier
 
 from model_builder.training.base import Model
 
 
-class LogisticRegressionModel(Model):
+class XGBClassifierModel(Model):
     def __init__(
         self,
-        Cs: Union[int, List[float]] = 10,
-        cv: int = 5,
-        solver: Literal[
-            "lbfgs", "liblinear", "newton-cg", "newton-cholesky", "sag", "saga"
-        ] = "lbfgs",
-        max_iter: int = 100,
-        l1_ratios: List[float] = [0.0],
+        n_estimators: int = 100,
+        max_depth: int = 6,
+        learning_rate: float = 0.3,
+        subsample: float = 1.0,
+        colsample_bytree: float = 1.0,
         seed: int = 524,
     ) -> None:
-        self._clf = LogisticRegressionCV(
-            Cs=Cs,
-            cv=cv,
-            solver=solver,
-            max_iter=max_iter,
-            l1_ratios=l1_ratios,
+        self._clf = XGBClassifier(
+            n_estimators=n_estimators,
+            max_depth=max_depth,
+            learning_rate=learning_rate,
+            subsample=subsample,
+            colsample_bytree=colsample_bytree,
             n_jobs=-1,
             random_state=seed,
-            use_legacy_attributes=False,  # type: ignore[call-arg]
+            eval_metric="logloss",
         )
 
-    def fit(self, X: pd.DataFrame, y: pd.Series) -> "LogisticRegressionModel":
+    def fit(self, X: pd.DataFrame, y: pd.Series) -> "XGBClassifierModel":
         self._clf.fit(X, y)
         return self
 
@@ -48,7 +45,7 @@ class LogisticRegressionModel(Model):
         joblib.dump(self._clf, path)
 
     @classmethod
-    def load(cls, path: Path) -> "LogisticRegressionModel":
+    def load(cls, path: Path) -> "XGBClassifierModel":
         instance = cls.__new__(cls)
         instance._clf = joblib.load(Path(path))
         return instance

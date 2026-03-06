@@ -24,12 +24,20 @@ class LogisticRegressionConfig(BaseModel):
     ] = "lbfgs"
     max_iter: int = 100
     l1_ratios: List[float] = [0.0]
-    n_jobs: int = -1
+
+
+class XGBClassifierConfig(BaseModel):
+    n_estimators: int = 100
+    max_depth: int = 6
+    learning_rate: float = 0.3
+    subsample: float = 1.0
+    colsample_bytree: float = 1.0
 
 
 class ModelConfig(BaseModel):
-    type: Literal["logr"] = "logr"
+    type: Literal["logr", "xgbc"] = "logr"
     logr: LogisticRegressionConfig = LogisticRegressionConfig()
+    xgbc: XGBClassifierConfig = XGBClassifierConfig()
 
 
 class DataConfig(BaseModel):
