@@ -15,6 +15,11 @@ class Model(ABC):
     def predict(self, X: pd.DataFrame) -> np.ndarray: ...
 
     @abstractmethod
+    def predict_proba(self, X: pd.DataFrame) -> np.ndarray:
+        """Return predicted probability for the positive class, shape (n,)."""
+        ...
+
+    @abstractmethod
     def score(self, X: pd.DataFrame, y: pd.Series) -> float: ...
 
     @abstractmethod

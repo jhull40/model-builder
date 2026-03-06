@@ -1,12 +1,13 @@
 import csv
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Tuple
 
 import joblib
 import pandas as pd
 
 from model_builder.config.schema import PipelineConfig
+from model_builder.evaluation import BinaryClassificationEvaluator
 from model_builder.preprocessing.preprocessor import Preprocessor
 from model_builder.training import build_model, Model
 
@@ -21,6 +22,9 @@ class Pipeline:
         self._model_id: Optional[int] = None
         self._timestamp: Optional[str] = None
         self._test_score: Optional[float] = None
+        self._train_split: Optional[Tuple[pd.DataFrame, pd.Series]] = None
+        self._test_split: Optional[Tuple[pd.DataFrame, pd.Series]] = None
+        self._val_split: Optional[Tuple[pd.DataFrame, pd.Series]] = None
 
     # ------------------------------------------------------------------
     # Public API
@@ -43,6 +47,11 @@ class Pipeline:
         X_test = test_df.drop(columns=[target])
         y_test = test_df[target]
 
+        self._train_split = (X_train, y_train)
+        self._test_split = (X_test, y_test)
+        if val_df is not None:
+            self._val_split = (val_df.drop(columns=[target]), val_df[target])
+
         self._model = build_model(self.config.model, seed=self.config.base.seed)
         self._model.fit(X_train, y_train)
         self._test_score = self._model.score(X_test, y_test)
@@ -50,6 +59,7 @@ class Pipeline:
         self._write_models_csv()
         self._save_scaler()
         self._save_model()
+        self._run_evaluation()
 
         return self
 
@@ -99,6 +109,24 @@ class Pipeline:
         with open(csv_path, newline="") as f:
             ids = [int(row["model_id"]) for row in csv.DictReader(f)]
         return max(ids) + 1 if ids else 1
+
+    # ------------------------------------------------------------------
+    # Evaluation
+    # ------------------------------------------------------------------
+
+    def _run_evaluation(self) -> None:
+        """Run binary classification evaluation if the target is binary."""
+        assert self._model is not None and self._model_id is not None
+        assert self._train_split is not None and self._test_split is not None
+        # Only binary classification is currently supported
+        if int(self._train_split[1].nunique()) != 2:
+            return
+        BinaryClassificationEvaluator(self.config, self._model_id).evaluate(
+            self._model,
+            self._train_split,
+            self._test_split,
+            self._val_split,
+        )
 
     # ------------------------------------------------------------------
     # Persistence

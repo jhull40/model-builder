@@ -13,6 +13,7 @@ A Python framework for building, evaluating, and analysing machine-learning pipe
 5. [Preprocessor](#preprocessor)
 6. [Pipeline](#pipeline)
 7. [Model Training](#model-training)
+8. [Evaluation](#evaluation)
 
 ---
 
@@ -367,3 +368,31 @@ output/<name>/models/
 ```
 
 See [`src/model_builder/training/README.md`](src/model_builder/training/README.md) for a full description of each model backend and its parameters.
+
+---
+
+## Evaluation
+
+`BinaryClassificationEvaluator` scores a fitted model on each data split and writes structured artifacts to `output/<name>/evaluation/<model_id>/`.
+
+### Usage
+
+```python
+from model_builder import BinaryClassificationEvaluator
+
+evaluator = BinaryClassificationEvaluator(config, model_id=pipeline.model_id)
+evaluator.evaluate(model, train=(X_train, y_train), test=(X_test, y_test))
+```
+
+### Output files
+
+| File | Description |
+|---|---|
+| `evaluation/<model_id>/metrics.csv` | Per-split metric table including a random baseline row |
+| `evaluation/<model_id>/report.pdf` | 5-page visual report (curves, histograms, calibration, confusion matrices) |
+
+### Threshold strategy
+
+The decision threshold is derived **from the training split only** by maximising F1, then applied uniformly to test and validation splits to prevent leakage.
+
+See [`src/model_builder/evaluation/README.md`](src/model_builder/evaluation/README.md) for the full metric reference and PDF page descriptions.

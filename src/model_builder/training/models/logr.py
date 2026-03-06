@@ -39,6 +39,9 @@ class LogisticRegressionModel(Model):
     def predict(self, X: pd.DataFrame) -> np.ndarray:
         return self._clf.predict(X)
 
+    def predict_proba(self, X: pd.DataFrame) -> np.ndarray:
+        return self._clf.predict_proba(X)[:, 1]
+
     def score(self, X: pd.DataFrame, y: pd.Series) -> float:
         return float(self._clf.score(X, y))
 
