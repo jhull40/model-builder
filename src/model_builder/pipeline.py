@@ -7,6 +7,7 @@ import joblib
 import pandas as pd
 
 from model_builder.config.schema import PipelineConfig
+from model_builder.eda.analyzer import DataAnalyzer
 from model_builder.evaluation import BinaryClassificationEvaluator
 from model_builder.preprocessing.preprocessor import Preprocessor
 from model_builder.training import build_model, Model
@@ -18,6 +19,7 @@ class Pipeline:
     def __init__(self, config: PipelineConfig) -> None:
         self.config = config
         self.preprocessor = Preprocessor(config)
+        self.analyzer = DataAnalyzer(config)
         self._model: Optional[Model] = None
         self._model_id: Optional[int] = None
         self._timestamp: Optional[str] = None
@@ -33,6 +35,8 @@ class Pipeline:
     def run(self, df: pd.DataFrame) -> "Pipeline":
         self._timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         self._model_id = self._next_model_id()
+
+        self.analyzer.run(df)
 
         train_df, test_df, val_df = self.preprocessor.split(df)
         self.preprocessor.fit(train_df)
