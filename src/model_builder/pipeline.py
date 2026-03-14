@@ -9,6 +9,7 @@ import pandas as pd
 from model_builder.config.schema import PipelineConfig
 from model_builder.eda.analyzer import DataAnalyzer
 from model_builder.evaluation import BinaryClassificationEvaluator
+from model_builder.feature_importance import FeatureImportanceAnalyzer
 from model_builder.preprocessing.preprocessor import Preprocessor
 from model_builder.training import build_model, Model
 
@@ -64,6 +65,7 @@ class Pipeline:
         self._save_scaler()
         self._save_model()
         self._run_evaluation()
+        self._run_feature_importance(X_train)
 
         return self
 
@@ -117,6 +119,16 @@ class Pipeline:
     # ------------------------------------------------------------------
     # Evaluation
     # ------------------------------------------------------------------
+
+    def _run_feature_importance(self, X_train: pd.DataFrame) -> None:
+        """Compute and persist feature importances for supported model types."""
+        assert self._model is not None and self._model_id is not None
+        try:
+            FeatureImportanceAnalyzer(self.config, self._model_id).analyze(
+                self._model, list(X_train.columns)
+            )
+        except TypeError:
+            pass  # Model type does not support feature importance; skip silently.
 
     def _run_evaluation(self) -> None:
         """Run binary classification evaluation if the target is binary."""
